@@ -1,0 +1,7 @@
+{
+  "name": "CYBER // CAT 戰術分析終端",
+  "description": "次世代貓咪戰術分析儀。利用 Gemini 2.5 視覺引擎解構生物特徵，精準換算萌殺力、混沌值等 RPG 戰力指標，並即時渲染專屬賽博全息頭像。",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
