@@ -4,12 +4,12 @@ import { GoogleGenAI, Schema, Type } from "@google/genai";
 let stream: MediaStream | null = null;
 let isProcessing = false;
 let chartInstance: any = null;
-let lastAnalysisData: any = null;
+let selectedGender: "Male" | "Female" = "Male"; // Default
 
 // Initialize Google GenAI
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
 
-// DOM Elements (Matches index.html IDs)
+// DOM Elements
 const video = document.getElementById('videoElement') as HTMLVideoElement;
 const canvas = document.getElementById('snapshotCanvas') as HTMLCanvasElement;
 const ctx = canvas?.getContext('2d');
@@ -23,6 +23,10 @@ const uploadBtn = document.getElementById('uploadBtn');
 const fileInput = document.getElementById('fileInput') as HTMLInputElement;
 const resultCard = document.getElementById('resultCard');
 
+// Gender Buttons
+const genderMaleBtn = document.getElementById('genderMale');
+const genderFemaleBtn = document.getElementById('genderFemale');
+
 // Image Generation Elements
 const generatedImageContainer = document.getElementById('generatedImageContainer');
 const generatedImage = document.getElementById('generatedImage') as HTMLImageElement;
@@ -33,11 +37,11 @@ const catAnalysisSchema: Schema = {
   type: Type.OBJECT,
   properties: {
     isCat: { type: Type.BOOLEAN },
-    title: { type: Type.STRING, description: "Traditional Chinese. Cool Sci-Fi Title for cat, or funny title for non-cat." },
+    title: { type: Type.STRING, description: "Traditional Chinese. Cool Sci-Fi Title for cat, or funny title for non-cat. Consider the selected gender." },
     emoji: { type: Type.STRING },
     description: { 
       type: Type.STRING, 
-      description: "Traditional Chinese. Analyze facial features/expressions and explain the combat power stats. Provide a detailed analysis, must be AT LEAST 100 characters." 
+      description: "Traditional Chinese. Analyze facial features/expressions and explain the combat power stats. Provide a detailed analysis, must be AT LEAST 100 characters. Adapt tone based on gender." 
     },
     visualTraits: { type: Type.STRING, description: "Concise English description of visual appearance for image generation." },
     stats: {
@@ -103,13 +107,24 @@ function initChart() {
   });
 }
 
+// --- Gender Selection Logic ---
+function setGender(gender: "Male" | "Female") {
+    selectedGender = gender;
+    if (gender === "Male") {
+        genderMaleBtn?.classList.add('active');
+        genderFemaleBtn?.classList.remove('active');
+    } else {
+        genderFemaleBtn?.classList.add('active');
+        genderMaleBtn?.classList.remove('active');
+    }
+}
+
 // --- Camera Logic ---
 async function startCamera() {
   try {
     updateStatus("初始化視覺傳感器...", "text-cyan-400");
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
     video.srcObject = stream;
-    // Wait for video to be ready
     video.onloadedmetadata = () => {
         video.play();
         placeholder!.classList.add('hidden');
@@ -161,18 +176,16 @@ async function snapAndAnalyze() {
   isProcessing = true;
   snapBtn.disabled = true;
 
-  // 1. Capture Frame
   if (!video.classList.contains('hidden')) {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     ctx!.save();
-    ctx!.scale(-1, 1); // Mirror for selfie cam
+    ctx!.scale(-1, 1);
     ctx!.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
     ctx!.restore();
     video.pause();
   }
 
-  // FX
   if(flashOverlay) {
       flashOverlay.style.opacity = '0.8';
       setTimeout(() => flashOverlay.style.opacity = '0', 150);
@@ -180,23 +193,19 @@ async function snapAndAnalyze() {
   if(scanOverlay) scanOverlay.classList.remove('hidden');
   updateStatus("分析神經數據中...", "text-yellow-400");
 
-  // 2. Process
   const base64Image = canvas.toDataURL('image/jpeg', 0.8).split(',')[1];
   
   try {
-    // A. Text Analysis
     const analysisResult = await analyzeImageText(base64Image);
     renderAnalysisResult(analysisResult);
     
-    // B. Auto Image Generation
-    if(scanOverlay) scanOverlay.classList.add('hidden'); // Stop scanning effect
+    if(scanOverlay) scanOverlay.classList.add('hidden');
     await generateAvatar(analysisResult);
 
   } catch (error: any) {
     console.error(error);
     updateStatus("分析失敗: " + error.message, "text-red-500");
     alert("系統錯誤: " + error.message);
-    // Only partial reset on error so user can try again
     isProcessing = false;
     snapBtn.disabled = false;
   } finally {
@@ -205,12 +214,14 @@ async function snapAndAnalyze() {
 }
 
 async function analyzeImageText(base64: string) {
-  // Enhanced prompt: explicitly asks for facial feature analysis linked to stats, AT LEAST 100 chars
-  const prompt = `Analyze this image. If it's a cat (or human/pet), assign Cyberpunk RPG stats. 
+  const genderZH = selectedGender === "Male" ? "公" : "母";
+  const prompt = `Analyze this image. The target's gender is identified as ${genderZH}. 
+  If it's a cat (or human/pet), assign Cyberpunk RPG stats. 
   For the 'description' (Traditional Chinese):
   1. Analyze specific facial features or expressions.
   2. Explain why these features lead to the assigned stats.
-  3. Be very descriptive and ensure the analysis is AT LEAST 100 characters long.`;
+  3. Be very descriptive and ensure the analysis is AT LEAST 100 characters long.
+  4. Ensure the analysis fits a ${genderZH} cat.`;
   
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
@@ -234,15 +245,16 @@ async function generateAvatar(data: any) {
   if (!generatedImageContainer || !imageLoader || !generatedImage) return;
 
   generatedImageContainer.classList.remove('hidden');
-  generatedImageContainer.classList.add('flex'); // Ensure flex for alignment
+  generatedImageContainer.classList.add('flex');
   imageLoader.classList.remove('hidden');
   generatedImage.classList.add('hidden');
   updateStatus("正在建構全息影像...", "text-pink-400");
 
   try {
     const visualTraits = data.visualTraits || "cyberpunk creature";
+    const genderTerm = selectedGender === "Male" ? "Male" : "Female";
     
-    const prompt = `A high-quality, vibrant cyberpunk cartoon sticker of ${visualTraits}. 
+    const prompt = `A high-quality, vibrant cyberpunk cartoon sticker of a ${genderTerm} ${visualTraits}. 
     Neon colors, bold lines, futuristic HUD elements in background. 
     Character: Cyberpunk Style. 
     Style: Vector art, Sticker style, detailed. 
@@ -279,8 +291,6 @@ async function generateAvatar(data: any) {
 }
 
 function renderAnalysisResult(data: any) {
-  lastAnalysisData = data;
-  
   if(resultCard) {
       resultCard.classList.remove('opacity-50', 'pointer-events-none');
   }
@@ -365,3 +375,7 @@ if (uploadBtn) uploadBtn.addEventListener('click', () => fileInput.click());
 if (fileInput) fileInput.addEventListener('change', handleFileUpload);
 if (snapBtn) snapBtn.addEventListener('click', snapAndAnalyze);
 if (resetBtn) resetBtn.addEventListener('click', () => resetApp(true));
+
+// Gender Selector Listeners
+genderMaleBtn?.addEventListener('click', () => setGender("Male"));
+genderFemaleBtn?.addEventListener('click', () => setGender("Female"));

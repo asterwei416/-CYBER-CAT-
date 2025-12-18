@@ -76,6 +76,20 @@
             cursor: not-allowed;
         }
 
+        /* Gender Specific Buttons */
+        .btn-male.active {
+            background-color: rgba(0, 243, 255, 0.3);
+            border-color: var(--cyber-cyan);
+            color: var(--cyber-cyan);
+            box-shadow: 0 0 15px var(--cyber-cyan);
+        }
+        .btn-female.active {
+            background-color: rgba(255, 0, 255, 0.3);
+            border-color: var(--cyber-pink);
+            color: var(--cyber-pink);
+            box-shadow: 0 0 15px var(--cyber-pink);
+        }
+
         /* Glitch Text Effect for Main Header */
         .glitch-text {
             position: relative;
@@ -172,6 +186,19 @@
                     COMMAND MODULE
                 </div>
 
+                <!-- Gender Selection -->
+                <div class="flex flex-col gap-1 mb-1">
+                    <span class="text-[10px] text-gray-500 tech-font uppercase tracking-widest">Gender Protocol Selection</span>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="genderMale" class="btn-male active border border-cyan-900/50 py-1 tech-font text-sm cyber-btn flex items-center justify-center gap-2">
+                            ♂ 公
+                        </button>
+                        <button id="genderFemale" class="btn-female border border-cyan-900/50 py-1 tech-font text-sm cyber-btn flex items-center justify-center gap-2">
+                            ♀ 母
+                        </button>
+                    </div>
+                </div>
+
                 <button id="snapBtn" class="w-full bg-pink-600/20 border border-pink-500 text-pink-500 text-2xl py-4 cyber-btn tech-font tracking-[0.2em] font-bold hover:bg-pink-500 hover:text-black disabled:border-gray-700 disabled:text-gray-700 disabled:bg-transparent transition-all" disabled>
                     <span class="block text-xs opacity-70 mb-1 font-sans font-normal tracking-normal uppercase">Execute Analysis</span>
                     快照掃描 📸
@@ -230,7 +257,7 @@
 
                     <!-- Media Grid: Strictly aligned side-by-side -->
                     <div class="grid grid-cols-2 gap-4 flex-1 mt-auto">
-                        <!-- Neural Chart Container: Now on the LEFT -->
+                        <!-- Neural Chart Container -->
                         <div class="relative w-full aspect-square border border-cyan-500/30 bg-black/40 flex items-center justify-center">
                             <div class="absolute top-0 right-0 bg-cyan-500 text-black px-2 py-[1px] text-[8px] font-bold tech-font transform skew-x-[-10deg] z-10">
                                 NEURAL CHART
@@ -238,7 +265,7 @@
                             <canvas id="radarChart" class="w-full h-full p-2"></canvas>
                         </div>
 
-                        <!-- Generated Image Area: Now on the RIGHT -->
+                        <!-- Generated Image Area -->
                         <div id="generatedImageContainer" class="hidden relative w-full aspect-square border border-pink-500/50 bg-white rounded overflow-hidden flex flex-col items-center justify-center">
                             <img id="generatedImage" class="w-full h-full object-contain hidden" alt="Generated Avatar">
                             <div id="imageLoader" class="absolute inset-0 flex flex-col items-center justify-center bg-black/80">
